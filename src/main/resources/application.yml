@@ -6,7 +6,7 @@ spring:
     name: UserService
   jpa:
     hibernate:
-      ddl-auto: update              # 개발 중: 엔티티에 맞춰 스키마 자동 생성·변경
+      ddl-auto: update
     database-platform: org.hibernate.dialect.MySQL8Dialect
     show-sql: true
   datasource:
@@ -19,11 +19,21 @@ spring:
     username: root
     password: yd157238+
     driver-class-name: com.mysql.cj.jdbc.Driver
+  mail:
+    host: smtp.email.ap-chuncheon-1.oci.oraclecloud.com
+    port: 587
+    username: ${OCI_SMTP_USERNAME}
+    password: ${OCI_SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+email:
+  from: admin@lumidiary.com
 
 jwt:
   secret: mysecretkeymysecretkeymysecretkey123456
   expiration: 86400000
-
-email:
-  api:
-    base-url: "http://localhost:8082"
