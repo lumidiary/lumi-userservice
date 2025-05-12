@@ -1,0 +1,29 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: UserService
+  jpa:
+    hibernate:
+      ddl-auto: update              # 개발 중: 엔티티에 맞춰 스키마 자동 생성·변경
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+  datasource:
+    url: "jdbc:mysql://localhost:3306/lumidiary
+      ?serverTimezone=Asia/Seoul
+      &characterEncoding=utf8
+      &useSSL=false
+      &allowPublicKeyRetrieval=true
+      &createDatabaseIfNotExist=true"
+    username: root
+    password: yd157238+
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+jwt:
+  secret: mysecretkeymysecretkeymysecretkey123456
+  expiration: 86400000
+
+email:
+  api:
+    base-url: "http://localhost:8082"
