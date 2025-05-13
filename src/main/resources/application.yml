@@ -5,7 +5,7 @@ spring:
   application:
     name: UserService
   config:
-    import: classpath:config/application-secret.yml
+    import: optional:config/application-secret.yml
   jpa:
     hibernate:
       ddl-auto: update
