@@ -1,6 +1,7 @@
 package com.example.userservice.service;
 
 import com.example.userservice.dto.UserDto;
+import com.example.userservice.jpa.Theme;
 import com.example.userservice.jpa.UserEntity;
 import com.example.userservice.jpa.UserRepository;
 import com.example.userservice.vo.*;
@@ -46,21 +47,25 @@ public class UserServiceImpl implements UserService {
     // 회원가입
     @Override
     public ResponseUser signup(RequestUser req) {
-        // 이메일 중복 체크
+        // 1) 이메일 중복 체크
         if (userRepository.findByEmail(req.getEmail()) != null) {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
-        // 인증 코드 검증
-        boolean ok = emailService.verifyCode(req.getEmail(), req.getVerificationCode());
-        if (!ok) {
-            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
-        }
-        // 엔티티 매핑 및 암호화
+
+        // 2) 엔티티 매핑 및 암호화
         UserEntity userEntity = mapper.map(req, UserEntity.class);
         userEntity.setEncryptedPwd(passwordEncoder.encode(req.getPwd()));
         userEntity.setUserId(UUID.randomUUID().toString());
+        userEntity.setEmail(req.getEmail());
+        userEntity.changeName(req.getName());
+        userEntity.changeBirthDate(req.getBirthDate());
 
+        userEntity.changeTheme(Theme.LIGHT);
+        userEntity.setProfileImageUrl("");
+
+        // 5) 저장
         userRepository.save(userEntity);
+
         return mapToResponse(userEntity, null);
     }
 

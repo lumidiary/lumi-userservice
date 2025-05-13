@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: UserService
+  config:
+    import: classpath:config/application-secret.yml
   jpa:
     hibernate:
       ddl-auto: update
@@ -16,14 +18,14 @@ spring:
       &useSSL=false
       &allowPublicKeyRetrieval=true
       &createDatabaseIfNotExist=true"
-    username: root
-    password: yd157238+
+    username: ${spring.datasource.username}   # 시크릿 파일에서 가져옴
+    password: ${spring.datasource.password}   # 시크릿 파일에서 가져옴
     driver-class-name: com.mysql.cj.jdbc.Driver
   mail:
     host: smtp.email.ap-chuncheon-1.oci.oraclecloud.com
     port: 587
-    username: ${OCI_SMTP_USERNAME}
-    password: ${OCI_SMTP_PASSWORD}
+    username: ${spring.mail.username}         # 시크릿 파일에서 가져옴
+    password: ${spring.mail.password}         # 시크릿 파일에서 가져옴
     properties:
       mail:
         smtp:
@@ -35,5 +37,10 @@ email:
   from: admin@lumidiary.com
 
 jwt:
-  secret: mysecretkeymysecretkeymysecretkey123456
+  secret: bXlzZWNyZXRrZXlteXNlY3JldGtleW15c2VjcmV0a2V5MTIzNDU2
   expiration: 86400000
+
+logging:
+  level:
+    org.springframework.security.web.FilterChainProxy: DEBUG
+    org.springframework.security.config: DEBUG

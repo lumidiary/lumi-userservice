@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -26,73 +27,70 @@ import java.util.function.Supplier;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class WebSecurity {
 
-    private UserService userService;
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
-    private Environment env;
-
-    public WebSecurity(Environment env, UserService userService, BCryptPasswordEncoder bCryptPasswordEncoder) {
-        this.env = env;
-        this.userService = userService;
-        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
-    }
+    private final UserService userService;
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final Environment env;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // 1) AuthenticationManagerBuilder 가져와서 UserDetailsService+PasswordEncoder 설정
+        AuthenticationManagerBuilder authBuilder =
+                http.getSharedObject(AuthenticationManagerBuilder.class);
 
-        // AuthenticationManager 설정
-        AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        authBuilder.userDetailsService(userService).passwordEncoder(bCryptPasswordEncoder);
-
+        authBuilder.userDetailsService(userService).passwordEncoder(passwordEncoder);
         AuthenticationManager authenticationManager = authBuilder.build();
 
-        // csrf 비활성화, 세션 STATELESS
+        // 2) DaoAuthenticationProvider 직접 만들어서 http에 등록
+        DaoAuthenticationProvider daoProvider = new DaoAuthenticationProvider();
+        daoProvider.setUserDetailsService(userService);    // 유저 조회용 서비스 등록
+        daoProvider.setPasswordEncoder(passwordEncoder);   // 비밀번호 암호화 방식 등록
+
         http
+                // CSRF 비활성화, 세션도 안 씁니다
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 엔드포인트 권한 설정
-                .authorizeHttpRequests(authz -> authz
+                // AuthenticationManager와 Provider 등록
+                .authenticationManager(authenticationManager)
+                .authenticationProvider(daoProvider)
 
-                        // 인증 관련(`/auth/**`) 은 모두 permitAll
+                // 엔드포인트별 권한 설정
+                .authorizeHttpRequests(authz -> authz
+                        // 에러 핸들러 접근 허용
+                        .requestMatchers("/error").permitAll()
+
+                        // 인증 없이 허용할 API
+                        .requestMatchers(HttpMethod.POST, "/users/email/verify").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/email/confirm").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/signup").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
-                        .requestMatchers(HttpMethod.GET,  "/users/email/verify").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/users/email/verify").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/users/password-reset/request").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/users/password-reset/confirm").permitAll()
-
-
-                        // 유저 정보 조회/수정/삭제 등은 인증 필요
-                        .requestMatchers("/users/**").authenticated()
-
-                        // 기타 공용 리소스
+                        .requestMatchers(HttpMethod.POST, "/users/password-reset/**").permitAll()
                         .requestMatchers("/health-check", "/h2-console/**").permitAll()
 
-                        // 기타 요청 거부
+                        // 그 외는 인증 필요 또는 거부
+                        .requestMatchers("/users/**").authenticated()
                         .anyRequest().denyAll()
                 )
 
-                // AuthenticationFilter 등록 (/users/login 처리)
-                .authenticationManager(authenticationManager)
+                // 로그인 필터와 IP 로깅 필터
                 .addFilter(getAuthenticationFilter(authenticationManager))
-
-                // IP 로깅 필터
                 .addFilterBefore(new IpAddressLoggingFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthorizationFilter(authenticationManager, userService, env),
+                        UsernamePasswordAuthenticationFilter.class)
 
-                // H2 console iframe 허용
+                // H2 콘솔 iframe 허용
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
     }
 
-
-    private AuthenticationFilterNew getAuthenticationFilter(AuthenticationManager authenticationManager) throws Exception {
-
+    private AuthenticationFilterNew getAuthenticationFilter(AuthenticationManager authenticationManager) {
         AuthenticationFilterNew filter = new AuthenticationFilterNew(authenticationManager, userService, env);
-        filter.setFilterProcessesUrl("/auth/login");
-
+        filter.setFilterProcessesUrl("/users/login");
         return filter;
     }
+
 }

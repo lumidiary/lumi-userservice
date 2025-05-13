@@ -19,26 +19,34 @@ public class UserController {
 
     // 이메일 중복 확인 및 인증 코드 발송
     @PostMapping("/email/verify")
-    public ResponseEntity<Void> sendEmailVerify(@Valid @RequestBody EmailVerificationRequest req) {
+    public ResponseEntity<String> sendEmailVerify(@Valid @RequestBody EmailVerificationRequest req) {
         userService.sendSignupVerification(req.getEmail());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok("인증 메일이 발송되었습니다. 메일함을 확인해주세요.");
     }
 
     // 이메일 인증 링크 클릭 (토큰 확인)
     @GetMapping("/email/verify")
-    public ResponseEntity<Void> verifyEmail(@RequestParam("token") String token) {
+    public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
         boolean ok = userService.verifySignupToken(token);
         if (!ok) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            // 잘못된 토큰 경우
+            return ResponseEntity
+                    .badRequest()
+                    .body("유효하지 않은 인증 토큰입니다.");
         }
-        return ResponseEntity.ok().build();
+        // 토큰 검증 성공 안내
+        return ResponseEntity
+                .ok("이메일 인증이 완료되었습니다.");
     }
+
 
     // 이메일 인증 코드 확인
     @PostMapping("/email/confirm")
-    public ResponseEntity<Void> confirmEmailVerify(@Valid @RequestBody EmailVerificationRequest req) {
+    public ResponseEntity<String> confirmEmailVerify(@Valid @RequestBody EmailVerificationRequest req) {
         userService.verifySignupCode(req);
-        return ResponseEntity.ok().build();
+        // 코드 검증 성공 안내
+        return ResponseEntity
+                .ok("인증 코드가 확인되었습니다. 회원가입을 진행해주세요.");
     }
 
     // 회원가입
@@ -71,8 +79,11 @@ public class UserController {
     // 내 프로필 조회
     @GetMapping("/profile")
     public ResponseEntity<ResponseUser> getProfile(Authentication auth) {
-        String userId = ((UserDetails) auth.getPrincipal()).getUsername();
-        return ResponseEntity.ok(userService.getProfile(userId));
+        ResponseUser principal = (ResponseUser) auth.getPrincipal();
+        // userId 조회 -> fresh data
+        String userId = principal.getUserId();
+        ResponseUser upToDate = userService.getProfile(userId);
+        return ResponseEntity.ok(upToDate);
     }
 
     // 내 프로필 수정
@@ -80,17 +91,20 @@ public class UserController {
     public ResponseEntity<ResponseUser> updateProfile(
             Authentication auth,
             @Valid @RequestBody UpdateProfileRequest req) {
-        String userId = ((UserDetails) auth.getPrincipal()).getUsername();
+
+        ResponseUser principal = (ResponseUser) auth.getPrincipal();
+        String userId = principal.getUserId();
         return ResponseEntity.ok(userService.updateProfile(userId, req));
     }
 
     // 회원 탈퇴 (soft delete)
     @DeleteMapping
     public ResponseEntity<Void> deleteUser(Authentication auth) {
-        String userId = ((UserDetails) auth.getPrincipal()).getUsername();
-        userService.deleteUser(userId);
+        ResponseUser me = (ResponseUser) auth.getPrincipal();
+        userService.deleteUser(me.getUserId());
         return ResponseEntity.noContent().build();
     }
+    
 
 
 

@@ -59,6 +59,10 @@ public class UserEntity {
         this.theme = newTheme;
     }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public void setProfileImageUrl(String url) {
         this.profileImageUrl = url;
     }
