@@ -1,5 +1,8 @@
 package com.example.userservice.service;
 
+import com.example.userservice.exception.CodeExpiredException;
+import com.example.userservice.exception.CodeMismatchException;
+import com.example.userservice.exception.CodeNotFoundException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -27,65 +32,133 @@ public class EmailServiceImpl implements EmailService {
     @Value("${email.from}")
     private String fromEmail;
 
-    // 메모리 캐시로 인증 코드 저장 (테스트 후 실제 서비스에서는 DB로 수정할 예정)
-    private final Map<String, String> signupCodes = new ConcurrentHashMap<>();
-    private final Map<String, String> resetCodes  = new ConcurrentHashMap<>();
+    private static class CodeInfo {
+        private final String code;
+        private final Instant createdAt;
+
+        public CodeInfo(String code, Instant createdAt) {
+            this.code = code;
+            this.createdAt = createdAt;
+        }
+    }
+
+    // 메모리 캐시로 이메일별 코드 만료시간 저장
+    private final Map<String, CodeInfo> signupCodes = new ConcurrentHashMap<>();
+    private final Map<String, CodeInfo> resetCodes  = new ConcurrentHashMap<>();
 
     // 회원가입용 인증 코드 발송
     @Override
     public void sendVerificationCode(String email) {
+        // 1) 인증 코드 생성 및 저장
         String code = generateCode();
-        signupCodes.put(email, code);
+        signupCodes.put(email, new CodeInfo(code, Instant.now()));
 
+        // 2) 메일 제목 설정
         String subject = "[LumiDiary] 회원가입 인증 코드";
-        // HTML 이메일 본문 구성
-        String html = "<div style='margin:20px;'>" +
-                "<h2>안녕하세요, LumiDiary입니다!</h2>" +
-                "<p>회원가입 인증을 위해 아래 코드를 입력해주세요.</p>" +
-                "<div style='padding:10px; border:1px solid #ccc; display:inline-block;'>" +
-                "<strong style='font-size:18px; color:#2F8FED;'>" + code + "</strong>" +
-                "</div>" +
-                "<p>감사합니다.</p>" +
-                "</div>";
 
+        // 3) Udemy 스타일 HTML 본문 구성
+        String html = ""
+                + "<div style=\"font-family:Arial,sans-serif; color:#333; padding:20px; max-width:600px; margin:auto;\">"
+                + "  <div style=\"text-align:center; margin-bottom:20px;\">"
+                + "    <h1 style=\"margin:0; font-size:24px; color:#7D3C98;\">LumiDiary</h1>"
+                + "  </div>"
+                + "  <p style=\"font-size:16px;\">안녕하세요!</p>"
+                + "  <p style=\"font-size:16px;\">회원가입 인증을 위해 아래 코드를 입력해주세요.</p>"
+                + "  <div style=\"background:#f5f5f5; padding:15px; text-align:center; margin:20px 0;\">"
+                + "    <span style=\"font-size:32px; font-weight:bold; letter-spacing:2px;\">" + code + "</span>"
+                + "  </div>"
+                + "  <p style=\"font-size:14px; color:#888;\">이 코드는 15분 후 만료됩니다.</p>"
+                + "  <p style=\"font-size:14px;\">요청하지 않으셨다면 "
+                + "    <a href=\"mailto:support@lumidiary.com\" style=\"color:#7D3C98; text-decoration:none;\">고객지원</a>으로 문의해주세요."
+                + "  </p>"
+                + "  <hr style=\"border:none; border-top:1px solid #eee; margin:30px 0;\"/>"
+                + "  <div style=\"font-size:12px; color:#aaa; text-align:center;\">"
+                + "    LumiDiary Inc, Seoul, Korea"
+                + "  </div>"
+                + "</div>";
+
+        // 4) 공통 발송 메서드 호출
         sendHtmlMail(email, subject, html);
     }
 
     // 회원가입용 코드 검증
     @Override
     public boolean verifyCode(String email, String code) {
-        String saved = signupCodes.get(email);
-        if (saved != null && saved.equals(code)) {
-            signupCodes.remove(email);
-            return true;
+        // 1) 저장된 코드 정보 조회
+        CodeInfo info = signupCodes.get(email);
+        if (info == null) {
+            // 코드 자체가 없는 경우
+            throw new CodeNotFoundException("인증 코드가 존재하지 않습니다.");
         }
-        return false;
+
+        // 2) 만료 시간(생성 시각 + 15분) 체크
+        Instant expiredAt = info.createdAt.plus(Duration.ofMinutes(15));
+        if (Instant.now().isAfter(expiredAt)) {
+            // 만료된 경우 저장소에서 제거 후 예외 발생
+            signupCodes.remove(email);
+            throw new CodeExpiredException("인증 코드가 만료되었습니다. 다시 요청해주세요.");
+        }
+
+        // 3) 코드 일치 여부 확인
+        if (!info.code.equals(code)) {
+            // 코드가 다를 경우
+            throw new CodeMismatchException("인증 코드가 올바르지 않습니다.");
+        }
+
+        // 검증 성공 시 저장된 코드 제거 후 true 반환
+        signupCodes.remove(email);
+        return true;
     }
 
     // 비밀번호 재설정용 코드 발송
     @Override
     public void sendPasswordResetCode(String email) {
+        // 1) 재설정 코드 생성 및 저장
         String code = generateCode();
-        resetCodes.put(email, code);
+        resetCodes.put(email, new CodeInfo(code, Instant.now()));
 
+        // 2) 메일 제목 설정
         String subject = "[LumiDiary] 비밀번호 재설정 인증 코드";
-        String html = "<div style='margin:20px;'>" +
-                "<h2>비밀번호 재설정 요청</h2>" +
-                "<p>아래 코드를 입력하여 비밀번호를 재설정하세요.</p>" +
-                "<div style='padding:10px; border:1px solid #ccc; display:inline-block;'>" +
-                "<strong style='font-size:18px; color:#E74C3C;'>" + code + "</strong>" +
-                "</div>" +
-                "<p>문의사항이 있으면 support@lumidiary.com으로 연락주세요.</p>" +
-                "</div>";
 
+        // 3) Udemy 스타일 HTML 본문 구성 (비밀번호 재설정용)
+        String html = ""
+                + "<div style=\"font-family:Arial,sans-serif; color:#333; padding:20px; max-width:600px; margin:auto;\">"
+                + "  <div style=\"text-align:center; margin-bottom:20px;\">"
+                + "    <h1 style=\"margin:0; font-size:24px; color:#E74C3C;\">LumiDiary</h1>"
+                + "  </div>"
+                + "  <p style=\"font-size:16px;\">비밀번호 재설정을 요청하셨습니다.</p>"
+                + "  <p style=\"font-size:16px;\">아래 코드를 입력하여 비밀번호를 변경해주세요.</p>"
+                + "  <div style=\"background:#f5f5f5; padding:15px; text-align:center; margin:20px 0;\">"
+                + "    <span style=\"font-size:32px; font-weight:bold; letter-spacing:2px;\">" + code + "</span>"
+                + "  </div>"
+                + "  <p style=\"font-size:14px; color:#888;\">이 코드는 15분 후 만료됩니다.</p>"
+                + "  <p style=\"font-size:14px;\">요청하지 않으셨다면 "
+                + "    <a href=\"mailto:support@lumidiary.com\" style=\"color:#E74C3C; text-decoration:none;\">고객지원</a>으로 문의해주세요."
+                + "  </p>"
+                + "  <hr style=\"border:none; border-top:1px solid #eee; margin:30px 0;\"/>"
+                + "  <div style=\"font-size:12px; color:#aaa; text-align:center;\">"
+                + "    LumiDiary Inc, Seoul, Korea"
+                + "  </div>"
+                + "</div>";
+
+        // 4) 공통 발송 메서드 호출
         sendHtmlMail(email, subject, html);
     }
 
     // 비밀번호 재설정 코드 검증
     @Override
     public boolean verifyPasswordResetCode(String email, String code) {
-        String saved = resetCodes.get(email);
-        if (saved != null && saved.equals(code)) {
+        CodeInfo info = resetCodes.get(email);
+        if (info == null) {
+            return false;
+        }
+
+        if (Instant.now().isAfter(info.createdAt.plus(Duration.ofMinutes(15)))) {
+            resetCodes.remove(email);
+            return false;
+        }
+
+        if (info.code.equals(code)) {
             resetCodes.remove(email);
             return true;
         }
