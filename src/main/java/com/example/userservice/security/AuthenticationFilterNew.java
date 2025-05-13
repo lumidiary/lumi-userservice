@@ -6,6 +6,8 @@ import com.example.userservice.vo.RequestLogin;
 import com.example.userservice.vo.ResponseUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -59,7 +61,10 @@ public class AuthenticationFilterNew  extends UsernamePasswordAuthenticationFilt
     }
 
     @Override
-    protected void successfulAuthentication(HttpServletRequest req, HttpServletResponse res, FilterChain chain, Authentication auth) {
+    protected void successfulAuthentication(HttpServletRequest req,
+                                            HttpServletResponse res,
+                                            FilterChain chain,
+                                            Authentication auth) {
 
         // 인증된 사용자 이메일
         String email = ((User) auth.getPrincipal()).getUsername();
@@ -68,18 +73,19 @@ public class AuthenticationFilterNew  extends UsernamePasswordAuthenticationFilt
         ResponseUser userDetails = userService.getUserDetailsByEmail(email);
 
         // SecretKey 생성
-        byte[] keyBytes = Base64.getEncoder()
-                .encode(env.getProperty("token.secret").getBytes());
+        byte[] keyBytes = Decoders.BASE64.decode(env.getProperty("jwt.secret"));
         SecretKey key = Keys.hmacShaKeyFor(keyBytes);
 
         Instant now = Instant.now();
+
+        // 커스텀 헤더로 Headers key에 token, value에 토큰값 설정
         String token = Jwts.builder()
                 .setSubject(userDetails.getUserId())
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(
-                        now.plusMillis(Long.parseLong(env.getProperty("token.expiration_time")))
+                        now.plusMillis(Long.parseLong(env.getProperty("jwt.expiration")))
                 ))
-                .signWith(key)
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
 
         // 헤더에 토큰·userId 추가
