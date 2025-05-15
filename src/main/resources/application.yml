@@ -33,6 +33,13 @@ spring:
           starttls:
             enable: true
 
+oci:
+  objectstorage:
+    namespace: ax5ipvulwvc1        # OCI Object Storage namespace
+    bucket: bucket-20250507-1731   # OCI Object Storage bucket name
+    uri-prefix: https://ax5ipvulwvc1.objectstorage.ap-chuncheon-1.oci.customer-oci.com
+
+
 email:
   from: admin@lumidiary.com
 
