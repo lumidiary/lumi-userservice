@@ -28,6 +28,9 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<oci.sdk.version>3.41.2</oci.sdk.version>
+		<jersey.version>3.1.6</jersey.version>
+		<jakarta.rs.version>3.1.0</jakarta.rs.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -104,6 +107,49 @@
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
 			<version>9.3.0</version>
+		</dependency>
+
+		<!-- OCI SDK Core & Object Storage -->
+		<dependency>
+			<groupId>com.oracle.oci.sdk</groupId>
+			<artifactId>oci-java-sdk-common</artifactId>
+			<version>${oci.sdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.oracle.oci.sdk</groupId>
+			<artifactId>oci-java-sdk-objectstorage</artifactId>
+			<version>${oci.sdk.version}</version>
+		</dependency>
+
+		<!-- ▼ 반드시 HTTP Provider 추가 (Jersey 3) ▼ -->
+		<dependency>
+			<groupId>com.oracle.oci.sdk</groupId>
+			<artifactId>oci-java-sdk-common-httpclient-jersey3</artifactId>
+			<version>${oci.sdk.version}</version>
+		</dependency>
+
+		<!-- Jakarta RS API (for Jersey 3) -->
+		<dependency>
+			<groupId>jakarta.ws.rs</groupId>
+			<artifactId>jakarta.ws.rs-api</artifactId>
+			<version>${jakarta.rs.version}</version>
+		</dependency>
+
+		<!-- Jersey 3.x -->
+		<dependency>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>${jersey.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jersey.inject</groupId>
+			<artifactId>jersey-hk2</artifactId>
+			<version>${jersey.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jersey.media</groupId>
+			<artifactId>jersey-media-json-jackson</artifactId>
+			<version>${jersey.version}</version>
 		</dependency>
 	</dependencies>
 

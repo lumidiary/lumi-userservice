@@ -59,6 +59,11 @@ public class UserEntity {
         this.theme = newTheme;
     }
 
+    public void restore() {
+        this.deleted = false;
+        this.deletedAt = null;
+    }
+
     public void setEmail(String email) {
         this.email = email;
     }

@@ -27,6 +27,9 @@ public class RequestUser {
     @NotNull
     private LocalDate birthDate;
 
+    @NotNull
+    private String profileImageUrl;
+
     @NotNull @Size(min = 4, max = 6) // 이메일 인증 시 전달되는 코드
     private String verificationCode;
 }

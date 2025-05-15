@@ -67,8 +67,10 @@ public class WebSecurity {
                         .requestMatchers(HttpMethod.POST, "/users/email/confirm").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/signup").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/users/password-reset/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/password-reset/request").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/password-reset/confirm").permitAll()
                         .requestMatchers("/health-check", "/h2-console/**").permitAll()
+                        .requestMatchers("/users/logout").permitAll()
 
                         // 그 외는 인증 필요 또는 거부
                         .requestMatchers("/users/**").authenticated()
