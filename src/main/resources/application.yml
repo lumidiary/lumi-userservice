@@ -1,0 +1,53 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: UserService
+  config:
+    import: optional:config/application-secret.yml
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+  datasource:
+    url: "jdbc:mysql://localhost:3306/lumidiary
+      ?serverTimezone=Asia/Seoul
+      &characterEncoding=utf8
+      &useSSL=false
+      &allowPublicKeyRetrieval=true
+      &createDatabaseIfNotExist=true"
+    username: ${spring.datasource.username}   # 시크릿 파일에서 가져옴
+    password: ${spring.datasource.password}   # 시크릿 파일에서 가져옴
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  mail:
+    host: smtp.email.ap-chuncheon-1.oci.oraclecloud.com
+    port: 587
+    username: ${spring.mail.username}         # 시크릿 파일에서 가져옴
+    password: ${spring.mail.password}         # 시크릿 파일에서 가져옴
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+oci:
+  objectstorage:
+    namespace: ax5ipvulwvc1        # OCI Object Storage namespace
+    bucket: bucket-20250507-1731   # OCI Object Storage bucket name
+    uri-prefix: https://ax5ipvulwvc1.objectstorage.ap-chuncheon-1.oci.customer-oci.com
+
+
+email:
+  from: admin@lumidiary.com
+
+jwt:
+  secret: bXlzZWNyZXRrZXlteXNlY3JldGtleW15c2VjcmV0a2V5MTIzNDU2
+  expiration: 86400000
+
+logging:
+  level:
+    org.springframework.security.web.FilterChainProxy: DEBUG
+    org.springframework.security.config: DEBUG
