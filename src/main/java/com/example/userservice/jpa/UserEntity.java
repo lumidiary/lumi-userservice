@@ -64,6 +64,18 @@ public class UserEntity {
         this.deletedAt = null;
     }
 
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setTheme(Theme theme) {
+        this.theme = theme;
+    }
+
     public void setEmail(String email) {
         this.email = email;
     }

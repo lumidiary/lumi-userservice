@@ -69,7 +69,10 @@ public class UserServiceImpl implements UserService {
             userEntity = mapper.map(req, UserEntity.class);
             userEntity.setEncryptedPwd(passwordEncoder.encode(req.getPwd()));
             userEntity.setUserId(UUID.randomUUID().toString());
+            userEntity.changeName(req.getName());
             userEntity.setProfileImageUrl(storageService.getDefaultImageUrl());
+            userEntity.changeBirthDate(req.getBirthDate());
+            userEntity.changeTheme(Theme.LIGHT);
         }
 
         // 3) 저장 (기존 레코드는 UPDATE, 신규는 INSERT)
