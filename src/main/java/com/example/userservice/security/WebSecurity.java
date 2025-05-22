@@ -65,6 +65,7 @@ public class WebSecurity {
                         // 인증 없이 허용할 API
                         .requestMatchers(HttpMethod.POST, "/users/email/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/email/confirm").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/email/confirm").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/signup").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/password-reset/request").permitAll()

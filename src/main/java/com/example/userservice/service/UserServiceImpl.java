@@ -5,10 +5,17 @@ import com.example.userservice.jpa.Theme;
 import com.example.userservice.jpa.UserEntity;
 import com.example.userservice.jpa.UserRepository;
 import com.example.userservice.vo.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,6 +24,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.crypto.SecretKey;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +38,15 @@ public class UserServiceImpl implements UserService {
     private final ModelMapper mapper;
     private final EmailService emailService;
     private final OciStorageService storageService;
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    // JWT 서명 키 생성
+    private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
 
     // 로드 사용자
     @Override
@@ -46,39 +63,52 @@ public class UserServiceImpl implements UserService {
     // 회원가입
     @Override
     public ResponseUser signup(RequestUser req) {
+        // 1) JWT 토큰 파싱 및 유효성 검증
+        Claims claims;
+        try {
+            claims = Jwts.parser()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(req.getToken())
+                    .getBody();
+        } catch (ExpiredJwtException ex) {
+            throw new IllegalArgumentException("인증 토큰이 만료되었습니다.");
+        } catch (JwtException ex) {
+            throw new IllegalArgumentException("유효하지 않은 인증 토큰입니다.");
+        }
+        // 토큰 타입 및 이메일 일치 여부 확인
+        if (!"signup".equals(claims.get("type", String.class)) ||
+                !claims.getSubject().equals(req.getEmail())) {
+            throw new IllegalArgumentException("토큰 검증에 실패했습니다.");
+        }
 
-        UserEntity existing = userRepository.findByEmail(req.getEmail());
-        if (existing != null && !existing.isDeleted()) {
-            // 삭제되지 않은(활성) 계정이 이미 있으면 예외
+        // 2) 기존 사용자 조회
+        UserEntity userEntity = userRepository.findByEmail(req.getEmail());
+        if (userEntity == null) {
+            userEntity = UserEntity.builder()
+                    .userId(UUID.randomUUID().toString())            // UUID 생성
+                    .email(req.getEmail())                           // 이메일 필수 세팅
+                    .build();
+        } else if (userEntity.isDeleted()) {
+            // 복구 가입
+            userEntity.restore();
+        } else {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
+        
+        userEntity.setEncryptedPwd(passwordEncoder.encode(req.getPwd()));
+        userEntity.changeName(req.getName());
+        userEntity.changeBirthDate(req.getBirthDate());
+        userEntity.changeTheme(Theme.LIGHT);
+        userEntity.setProfileImageUrl(storageService.getDefaultImageUrl());
+        // 이메일 인증된 상태로 설정
+        userEntity.verifyEmail();
 
-        UserEntity userEntity;
-        if (existing != null && existing.isDeleted()) {
-            // 2-1) 삭제된 계정이 있으면 복원 모드
-            userEntity = existing;
-            userEntity.restore();                             // 삭제 해제
-            userEntity.setEncryptedPwd(
-                    passwordEncoder.encode(req.getPwd()));        // 비밀번호 갱신
-            userEntity.changeName(req.getName());             // 이름 갱신
-            userEntity.changeBirthDate(req.getBirthDate());   // 생년월일 갱신
-            userEntity.changeTheme(Theme.LIGHT);        // 테마 갱신
-            userEntity.setProfileImageUrl(storageService.getDefaultImageUrl());
-        } else {
-            // 2-2) 완전 신규 가입
-            userEntity = mapper.map(req, UserEntity.class);
-            userEntity.setEncryptedPwd(passwordEncoder.encode(req.getPwd()));
-            userEntity.setUserId(UUID.randomUUID().toString());
-            userEntity.changeName(req.getName());
-            userEntity.setProfileImageUrl(storageService.getDefaultImageUrl());
-            userEntity.changeBirthDate(req.getBirthDate());
-            userEntity.changeTheme(Theme.LIGHT);
-        }
-
-        // 3) 저장 (기존 레코드는 UPDATE, 신규는 INSERT)
+        // 4) DB 저장 및 응답
         userRepository.save(userEntity);
         return mapToResponse(userEntity, null);
     }
+
 
 
     @Override
@@ -91,22 +121,20 @@ public class UserServiceImpl implements UserService {
         }
 
         // 삭제된 계정만 있거나 완전 신규 이메일인 경우에만 코드 발송
-        emailService.sendVerificationCode(email);
+        emailService.sendVerificationLink(email);
     }
 
     @Override
-    public void verifySignupCode(EmailVerificationRequest req) {
-        String email = req.getEmail();
-        // DB 조회: 이미 활성 중인 계정이 있으면 중복 예외
-        UserEntity existing = userRepository.findByEmail(email);
-        if (existing != null && !existing.isDeleted()) {
-            // 이미 사용 중인(삭제되지 않은) 이메일이면 예외
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+    public boolean verifySignupToken(String token) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        if (!"signup".equals(claims.get("type",String.class))) {
+            throw new IllegalArgumentException("잘못된 토큰 타입");
         }
-        // 인증 코드 검증: EmailService 에 위임
-        if (!emailService.verifyCode(email, req.getCode())) {
-            throw new IllegalArgumentException("인증 코드가 올바르지 않습니다.");
-        }
+        return true;
     }
 
     // 로그인
@@ -124,27 +152,34 @@ public class UserServiceImpl implements UserService {
     public void sendPasswordReset(PasswordResetRequest req) {
         UserEntity userEntity = userRepository.findByEmail(req.getEmail());
         if (userEntity == null) throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
-        emailService.sendPasswordResetCode(req.getEmail());
+        emailService.sendPasswordResetLink(req.getEmail());
     }
 
+    // 비밀번호 재설정 토큰 검증 및 비밀번호 변경
     @Override
     public void confirmPasswordReset(PasswordResetConfirmRequest req) {
-        // 1) 코드 검증
-        if (!emailService.verifyPasswordResetCode(req.getEmail(), req.getCode())) {
-            throw new IllegalArgumentException("비밀번호 재설정 코드가 올바르지 않습니다.");
+        try {
+            boolean ok = emailService.verifyPasswordResetToken(req.getToken());
+            if (!ok) {
+                throw new IllegalArgumentException("유효하지 않은 비밀번호 재설정 토큰입니다.");
+            }
+            Claims claims = Jwts.parser()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(req.getToken())
+                    .getBody();
+            String email = claims.getSubject();
+            UserEntity userEntity = userRepository.findByEmail(email);
+            if (userEntity == null || userEntity.isDeleted()) {
+                throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
+            }
+            userEntity.setEncryptedPwd(passwordEncoder.encode(req.getNewPassword()));
+            userRepository.save(userEntity);
+        } catch (ExpiredJwtException ex) {
+            throw new IllegalArgumentException("비밀번호 재설정 토큰이 만료되었습니다.");
+        } catch (JwtException ex) {
+            throw new IllegalArgumentException("유효하지 않은 비밀번호 재설정 토큰입니다.");
         }
-
-        // 2) 기존 사용자 조회
-        UserEntity userEntity = userRepository.findByEmail(req.getEmail());
-        if (userEntity == null || userEntity.isDeleted()) {
-            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
-        }
-
-        // 3) 비밀번호만 교체
-        userEntity.setEncryptedPwd(passwordEncoder.encode(req.getNewPassword()));
-
-        // 4) 변경된 엔티티 저장 (UPDATE)
-        userRepository.save(userEntity);
     }
 
     // 프로필 조회
@@ -206,12 +241,6 @@ public class UserServiceImpl implements UserService {
         }
 
         return mapToResponse(ue, null);
-    }
-
-    @Override
-    public boolean verifySignupToken(String token) {
-        // EmailServiceImpl 에 구현된 외부 API 호출 로직에 위임
-        return emailService.verifySignupToken(token);
     }
 
     private ResponseUser mapToResponse(UserEntity userEntity, String token) {
