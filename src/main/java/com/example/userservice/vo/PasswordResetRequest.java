@@ -6,9 +6,7 @@ import lombok.Data;
 
 @Data
 public class PasswordResetRequest {
-    // 비밀번호 재설정 요청 (이메일 발송만)
     @NotNull
     @Email
     private String email;
-
 }

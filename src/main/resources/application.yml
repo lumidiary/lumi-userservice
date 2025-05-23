@@ -12,12 +12,12 @@ spring:
     database-platform: org.hibernate.dialect.MySQL8Dialect
     show-sql: true
   datasource:
-    url: "jdbc:mysql://localhost:3306/lumidiary
+    url: "jdbc:mysql://10.0.10.210:3306/lumidiary 
       ?serverTimezone=Asia/Seoul
       &characterEncoding=utf8
       &useSSL=false
       &allowPublicKeyRetrieval=true
-      &createDatabaseIfNotExist=true"
+      &createDatabaseIfNotExist=true" #"jdbc:mysql://10.0.10.210:3306/lumidiary
     username: ${spring.datasource.username}   # 시크릿 파일에서 가져옴
     password: ${spring.datasource.password}   # 시크릿 파일에서 가져옴
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -46,6 +46,11 @@ email:
 jwt:
   secret: bXlzZWNyZXRrZXlteXNlY3JldGtleW15c2VjcmV0a2V5MTIzNDU2
   expiration: 86400000
+  verification-expiration-ms: 900000
+
+app:
+  client:
+    url: "api.lumidiary.com"
 
 logging:
   level:
