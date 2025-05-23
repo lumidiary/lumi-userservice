@@ -45,18 +45,32 @@ public class UserEntity {
 
     private LocalDateTime deletedAt;
 
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
+    @Column
+    private LocalDateTime emailVerifiedAt;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void markDeleted(LocalDateTime when) {
         this.deleted = true;
         this.deletedAt = when;
-    }
-
-    public void changeName(String newName) {
-        this.name = newName;
-    }
-
-    public void changeTheme(Theme newTheme) {
-
-        this.theme = newTheme;
     }
 
     public void restore() {
@@ -64,16 +78,20 @@ public class UserEntity {
         this.deletedAt = null;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setProfileImageUrl(String url) {
-        this.profileImageUrl = url;
+    public void changeName(String newName) {
+        this.name = newName;
     }
 
     public void changeBirthDate(LocalDate newBirthDate) {
         this.birthDate = newBirthDate;
+    }
+
+    public void changeTheme(Theme newTheme) {
+        this.theme = newTheme;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public void setEncryptedPwd(String encryptedPwd) {
@@ -84,4 +102,11 @@ public class UserEntity {
         this.userId = userId;
     }
 
+    /**
+     * 이메일 인증 상태를 true로 변경하고 인증 시각을 기록합니다.
+     */
+    public void verifyEmail() {
+        this.emailVerified = true;
+        this.emailVerifiedAt = LocalDateTime.now();
+    }
 }

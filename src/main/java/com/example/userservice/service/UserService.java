@@ -10,7 +10,7 @@ public interface UserService extends UserDetailsService {
 
     ResponseUser signup(RequestUser request);                        // 회원가입
     void sendSignupVerification(String email);                      // 가입 이메일 인증 요청
-    void verifySignupCode(EmailVerificationRequest req);            // 가입 이메일 인증 확인
+    boolean verifySignupToken(String token);
 
     ResponseUser login(String email, String password);              // 로그인 로직
 
@@ -22,8 +22,6 @@ public interface UserService extends UserDetailsService {
     ResponseUser updateProfileImage(String userId, MultipartFile file);            // 프로필 이미지 업로드 및 변경
 
     void deleteUser(String userId);                                // 탈퇴 (삭제 표시)
-
-    boolean verifySignupToken(String token);                       // 이메일 인증 링크 내 토큰 검증
 
     ResponseUser getUserDetailsByEmail(String email);              // 이메일로 회원 정보 조회
 
