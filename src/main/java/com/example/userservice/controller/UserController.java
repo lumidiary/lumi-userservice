@@ -22,10 +22,22 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
+@CrossOrigin(
+        origins = {"https://lumi-fe-eta.vercel.app", "http://localhost:5173"},  // 허용할 프론트 도메인
+        allowCredentials = "true"                                               // 쿠키·인증헤더 허용
+)
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
+
+    // 다이제스트 완료 엔드포인트
+    @PostMapping("/digest/completed")
+    public ResponseEntity<Void> digestCompleted(
+            @Valid @RequestBody DigestNotificationRequest req) {
+        userService.notifyDigestCompleted(req.getUserId(), req.getDigestContent());
+        return ResponseEntity.ok().build();
+    }
 
     // 프로필 이미지 업로드
     @PostMapping(value = "/{userId}/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
