@@ -26,4 +26,6 @@ public interface UserService extends UserDetailsService {
     ResponseUser getUserDetailsByEmail(String email);              // 이메일로 회원 정보 조회
 
     Iterable<ResponseUser> getAllUsers();                          // 전체 회원 조회
+
+    void notifyDigestCompleted(String userId, String digestContent); // 다이제스트 완료 알림
 }

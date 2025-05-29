@@ -109,7 +109,16 @@ public class UserServiceImpl implements UserService {
         return mapToResponse(userEntity, null);
     }
 
-
+    @Override
+    public void notifyDigestCompleted(String userId, String digestContent) {
+        // 1) userId로 사용자 조회
+        UserEntity user = userRepository.findByUserId(userId);
+        if (user == null || user.isDeleted()) {
+            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + userId);
+        }
+        // 2) 이메일로 다이제스트 완료 알림 전송
+        emailService.sendDigestCompletionEmail(user.getEmail(), digestContent);
+    }
 
     @Override
     public void sendSignupVerification(String email) {

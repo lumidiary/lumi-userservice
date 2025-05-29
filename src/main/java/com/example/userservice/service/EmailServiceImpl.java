@@ -71,7 +71,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendVerificationLink(String email) {
         String token = createToken(email, "signup");
-        String link = clientUrl + "/signup?verifyToken=" + token;
+        String link = /*clientUrl + */"https://lumi-fe-eta.vercel.app/signup?verifyToken=" + token;
 
         String subject = "[LumiDiary] 회원가입 이메일 인증";
         String html = ""
@@ -119,7 +119,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendPasswordResetLink(String email) {
         String token = createToken(email, "reset");
-        String link = clientUrl + "/reset-password?resetToken=" + token;
+        String link = /*clientUrl + */"https://lumi-fe-eta.vercel.app/reset-password?resetToken=" + token;
 
         String subject = "[LumiDiary] 비밀번호 재설정 이메일";
         String html = ""
@@ -157,6 +157,23 @@ public class EmailServiceImpl implements EmailService {
         } catch (JwtException ex) {
             return false;
         }
+    }
+
+    @Override
+    public void sendDigestCompletionEmail(String toEmail, String digestContent) {
+        String subject = "[LumiDiary] 다이제스트가 완성되었습니다";
+        // HTML 템플릿 안에 digestContent 삽입
+        String html = ""
+                + "<div style=\"font-family:Arial,sans-serif;color:#333;padding:20px;max-width:600px;margin:auto;\">"
+                + "  <h2 style=\"color:#7D3C98;\">안녕하세요, LumiDiary입니다!</h2>"
+                + "  <p>요청하신 일일/주간 다이제스트가 완료되었습니다.</p>"
+                + "  <div style=\"background:#f5f5f5;padding:15px;margin:20px 0;border-radius:4px;\">"
+                + "    <pre style=\"white-space:pre-wrap;font-size:14px;\">" + digestContent + "</pre>"
+                + "  </div>"
+                + "  <p>감사합니다.</p>"
+                + "</div>";
+
+        sendHtmlMail(toEmail, subject, html);
     }
 
     // 공통 HTML 메일 전송
