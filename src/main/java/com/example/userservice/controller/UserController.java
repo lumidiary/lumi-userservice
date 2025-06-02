@@ -18,7 +18,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/users")
@@ -35,7 +37,42 @@ public class UserController {
     @PostMapping("/digest/completed")
     public ResponseEntity<Void> digestCompleted(
             @Valid @RequestBody DigestNotificationRequest req) {
-        userService.notifyDigestCompleted(req.getUserId(), req.getDigestContent());
+
+        String rawId = req.getId().toString();
+        UUID userId;
+
+        // 1) "0x" 접두사 혹은 32자리 헥스 문자열 패턴 검사
+        String hex = rawId;
+        if (hex.startsWith("0x") || hex.startsWith("0X")) {
+            // 접두사 제거
+            hex = hex.substring(2);
+        }
+        // 32자리 헥스 패턴(0-9,a-f)인지 확인
+        if (hex.matches("(?i)^[0-9A-F]{32}$")) {
+            // 소문자로 통일 후 UUID 포맷팅
+            hex = hex.toLowerCase(Locale.ROOT);
+            String formatted = String.format("%s-%s-%s-%s-%s",
+                    hex.substring(0, 8),
+                    hex.substring(8, 12),
+                    hex.substring(12, 16),
+                    hex.substring(16, 20),
+                    hex.substring(20, 32)
+            );
+            userId = UUID.fromString(formatted);
+
+        } else {
+            // 그 외에는 일반 UUID 문자열이라고 보고 바로 파싱
+            userId = UUID.fromString(rawId);
+        }
+
+        // 2) 서비스 호출
+        userService.notifyDigestCompleted(
+                userId,
+                req.getTitle(),
+                req.getPeriodStart(),
+                req.getPeriodEnd(),
+                req.getSummary()
+        );
         return ResponseEntity.ok().build();
     }
 

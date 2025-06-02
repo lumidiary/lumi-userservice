@@ -70,6 +70,7 @@ public class WebSecurity {
                         .requestMatchers("/error").permitAll()
 
                         // 인증 없이 허용할 API
+                        .requestMatchers(HttpMethod.POST, "/users/digest/completed").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/email/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/email/confirm").permitAll()
                         .requestMatchers(HttpMethod.GET, "/users/email/confirm").permitAll()
