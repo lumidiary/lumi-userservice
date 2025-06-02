@@ -1,5 +1,5 @@
 # .github/workflows/main.yml
-name: CD: Spring Boot → Docker Hub → Kubernetes Rollout
+name: Userservice_CD
 
 # 1. 워크플로우 실행 트리거: main 브랜치에 코드가 푸시될 때 자동 실행
 on:
