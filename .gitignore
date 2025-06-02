@@ -1,3 +1,4 @@
 .idea/
 /src/main/resources/config/application-secret.yml
 /target/
+/k8s/user-service-secret.yml
