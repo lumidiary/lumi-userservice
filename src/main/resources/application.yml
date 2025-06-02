@@ -56,7 +56,7 @@ jwt:
 
 app:
   client:
-    url: "api.lumidiary.com"
+    url: "lumidiary.com"
 
 logging:
   level:

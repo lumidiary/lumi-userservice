@@ -76,7 +76,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendVerificationLink(String email) {
         String token = createToken(email, "signup");
-        String link = /*clientUrl + */"https://lumi-fe-eta.vercel.app/signup?verifyToken=" + token;
+        String link = /*clientUrl + */"https://lumidiary.com/signup?verifyToken=" + token;
 
         String subject = "[LumiDiary] 회원가입 이메일 인증";
         String html = ""
@@ -124,7 +124,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendPasswordResetLink(String email) {
         String token = createToken(email, "reset");
-        String link = /*clientUrl + */"https://lumi-fe-eta.vercel.app/password-change?verifyToken=" + token;
+        String link = /*clientUrl + */"https://lumidiary.com/password-change?verifyToken=" + token;
 
         String subject = "[LumiDiary] 비밀번호 재설정 이메일";
         String html = ""

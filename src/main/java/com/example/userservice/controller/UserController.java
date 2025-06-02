@@ -25,7 +25,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/users")
 @CrossOrigin(
-        origins = {"https://lumi-fe-eta.vercel.app", "http://localhost:5173"},  // 허용할 프론트 도메인
+        origins = {"https://lumi-fe-eta.vercel.app", "http://localhost:5173", "https://lumidiary.com"},  // 허용할 프론트 도메인
         allowCredentials = "true"                                               // 쿠키·인증헤더 허용
 )
 @RequiredArgsConstructor
