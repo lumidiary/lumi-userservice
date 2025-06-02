@@ -18,14 +18,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ------------------------------------------------
-      # 1) 저장소 코드 체크아웃
-      # ------------------------------------------------
+      # 1) 코드 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      # --------------------------------------------------------
+      # 2) Docker 설치 (ubuntu-latest에도 기본 설치되어 있지만, 명시적으로 설치해서 보장)
+      # --------------------------------------------------------
+      - name: Install Docker Engine
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
         
       # ------------------------------------------------
-      # 2) JDK 17 설치 (Spring Boot 빌드를 위해 필요)
+      # 3) JDK 17 설치 (Spring Boot 빌드를 위해 필요)
       # ------------------------------------------------
       - name: Set up Java 17
         uses: actions/setup-java@v3
@@ -34,7 +42,7 @@ jobs:
           java-version: '17'
 
       # ------------------------------------------------
-      # 3) Maven 의존성 캐시 (빌드 속도 최적화)
+      # 4) Maven 의존성 캐시 (빌드 속도 최적화)
       # ------------------------------------------------
       - name: Cache Maven dependencies
         uses: actions/cache@v3
@@ -45,13 +53,13 @@ jobs:
             ${{ runner.os }}-maven-
 
       # ------------------------------------------------
-      # 4) Maven으로 Spring Boot 패키징 (Jar 생성)
+      # 5) Maven으로 Spring Boot 패키징 (Jar 생성)
       # ------------------------------------------------
       - name: Build with Maven
         run: mvn clean compile package -DskipTests
 
       # ------------------------------------------------
-      # 5) Docker Hub 로그인
+      # 6) Docker Hub 로그인
       # ------------------------------------------------
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -62,14 +70,14 @@ jobs:
         # Docker Hub에 로그인합니다.
 
       # ------------------------------------------------
-      # 6) Docker Buildx 설치 (멀티 아키텍처 빌드 지원)
+      # 7) Docker Buildx 설치 (멀티 아키텍처 빌드 지원)
       # ------------------------------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         # docker buildx를 활성화하여 linux/amd64, linux/arm64 등 멀티 아키텍처 이미지 빌드가 가능하게 합니다.
 
       # ------------------------------------------------
-      # 7) Docker 이미지 빌드 및 푸시
+      # 8) Docker 이미지 빌드 및 푸시
       # ------------------------------------------------
       - name: Build and Push Docker image
         run: |
@@ -83,14 +91,14 @@ jobs:
             .
 
       # ------------------------------------------------
-      # 8) kubectl 설치 (Kubernetes 명령어 사용 준비)
+      # 9) kubectl 설치 (Kubernetes 명령어 사용 준비)
       # ------------------------------------------------
       - name: Install kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'v1.27.0'
 
-      # 9) OCI CLI 설치
+      # 10) OCI CLI 설치
       - name: Install OCI CLI
         run: |
           python3 -m pip install --upgrade pip
@@ -98,7 +106,7 @@ jobs:
           echo "PATH=$HOME/.local/bin:\$PATH" >> $GITHUB_ENV
 
       # ------------------------------------------------
-      # 10) Kubeconfig 복원 (GitHub Secrets → ~/.kube/config)
+      # 11) Kubeconfig 복원 (GitHub Secrets → ~/.kube/config)
       # ------------------------------------------------
       - name: Restore Kubeconfig
         run: |
@@ -109,7 +117,7 @@ jobs:
           kubectl config view
           kubectl get nodes --no-headers
 
-      # 11) Kubernetes 매니페스트 적용(apply)
+      # 12) Kubernetes 매니페스트 적용(apply)
       - name: Apply Kubernetes manifests
         run: |
           kubectl apply -f k8s/
