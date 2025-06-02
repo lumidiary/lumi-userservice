@@ -104,10 +104,27 @@ jobs:
           kubectl get nodes --no-headers
 
       # 10) Kubernetes Secret 매니페스트 적용 (user-service-secret)
-      - name: Create & Apply Kubernetes Secret from Secret
+      - name: Create & Apply Kubernetes Secret from Individual Secrets
         run: |
           mkdir -p k8s
-          kubectl apply -f <(echo "${{ secrets.USER_SERVICE_SECRET_YML }}")
+
+          # here-doc 방식으로 k8s/user-service-secret.yml 파일 생성
+          cat <<EOF > k8s/user-service-secret.yml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user-service-secret
+  namespace: default
+type: Opaque
+stringData:
+  spring.datasource.username: "${{ secrets.SPRING_DATASOURCE_USERNAME }}"
+  spring.datasource.password: "${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+  spring.mail.username:       "${{ secrets.SPRING_MAIL_USERNAME }}"
+  spring.mail.password:       "${{ secrets.SPRING_MAIL_PASSWORD }}"
+EOF
+
+          # 생성된 Secret 매니페스트를 클러스터에 적용
+          kubectl apply -f k8s/user-service-secret.yml
           
       # 11) Kubernetes 매니페스트 적용
       - name: Apply Kubernetes Deployment & Service
