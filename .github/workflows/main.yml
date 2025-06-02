@@ -80,26 +80,36 @@ jobs:
       - name: Install kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'v1.27.0'
+          version: 'v1.32.1'
 
-      # 10) OCI CLI 설치
+      # 10) OCI CLI 설치 및 config & private key 복원
       - name: Install OCI CLI
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-          pip3 install --user oci-cli
-          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+          python3 -m pip install --upgrade pip
+          pip3 install --upgrade oci-cli
 
-      # ------------------------------------------------
-      # 11) Kubeconfig 복원 (GitHub Secrets → ~/.kube/config)
-      # ------------------------------------------------
-      - name: Restore Kubeconfig
+      - name: Restore OCI config & private key
         run: |
-          mkdir -p $HOME/.kube
-          touch $HOME/.kube/config
-          
-          echo "${{ secrets.KUBECONFIG_CONTENT }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
+          mkdir -p ~/.oci
+          echo "${{ secrets.OCI_CONFIG_CONTENT }}" > ~/.oci/config
+          chmod 600 ~/.oci/config
+
+          echo "${{ secrets.OCI_PRIVATE_KEY_CONTENT }}" > ~/.oci/oci_api_private_key.pem
+          chmod 600 ~/.oci/oci_api_private_key.pem
+
+          export OCI_CLI_PROFILE=DEFAULT
+          export OCI_CLI_AUTH=instance_principal
+
+      # 11) OCI CLI로 kubeconfig 생성
+      - name: Generate kubeconfig via OCI CLI
+        run: |
+          oci ce cluster create-kubeconfig \
+            --cluster-id ${{ secrets.OCI_CLUSTER_OCID }} \
+            --file $HOME/.kube/config \
+            --region ${{ secrets.OCI_REGION }} \
+            --token-version v2.0 \
+            --overwrite
+          chmod 600 $HOME/.kube/config
 
           kubectl config view
           kubectl get nodes --no-headers
