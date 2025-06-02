@@ -32,6 +32,9 @@ spec:
               readOnly: true
           ports:
             - containerPort: 8081
+          envFrom:
+            - secretRef:
+                name: user-service-secret
 ---
 apiVersion: v1
 kind: Service
