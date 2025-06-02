@@ -17,20 +17,14 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        shell: bash
+
     steps:
       # 1) 코드 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      # --------------------------------------------------------
-      # 2) Docker 설치 (ubuntu-latest에도 기본 설치되어 있지만, 명시적으로 설치해서 보장)
-      # --------------------------------------------------------
-      - name: Install Docker Engine
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y docker.io
-          sudo systemctl start docker
-          sudo systemctl enable docker
         
       # ------------------------------------------------
       # 3) JDK 17 설치 (Spring Boot 빌드를 위해 필요)
