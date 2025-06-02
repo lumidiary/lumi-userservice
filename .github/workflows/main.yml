@@ -95,6 +95,7 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip3 install oci-cli --upgrade
+          echo "PATH=$HOME/.local/bin:\$PATH" >> $GITHUB_ENV
 
       # ------------------------------------------------
       # 10) Kubeconfig 복원 (GitHub Secrets → ~/.kube/config)
