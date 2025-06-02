@@ -1,5 +1,8 @@
 package com.example.userservice.service;
 
+import java.time.LocalDate;
+import java.util.UUID;
+
 public interface EmailService {
     // 회원가입 이메일 인증 링크 발송
     void sendVerificationLink(String email);
@@ -14,5 +17,6 @@ public interface EmailService {
     boolean verifyPasswordResetToken(String token);
 
     // 다이제스트 완성 알림 이메일
-    void sendDigestCompletionEmail(String toEmail, String digestContent);
+    public void sendDigestCompletionEmail(String toEmail, UUID id, String title,
+                                          LocalDate periodStart, LocalDate periodEnd, String summary);
 }
