@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  labels:
+    app: user-service
+spec:
+  revisionHistoryLimit: 2
+  replicas: 3
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-secret
+      volumes:
+        - name: oci-config
+          secret:
+            secretName: oci-config-secret  # secretName 으로 수정
+      containers:
+        - name: user-service
+          image: 9september/user-service:latest
+          imagePullPolicy: Always
+          # config 와 키 파일이 /root/.oci/config, /root/.oci/oci_api_key.pem 으로 마운트됩니다.
+          volumeMounts:
+            - name: oci-config
+              mountPath: /root/.oci
+              readOnly: true
+          ports:
+            - containerPort: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 80
+      targetPort: 8081
+  type: ClusterIP
