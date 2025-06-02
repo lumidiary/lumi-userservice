@@ -95,6 +95,7 @@ jobs:
       # ------------------------------------------------
       - name: Restore Kubeconfig
         run: |
+          mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG_CONTENT }}" > ~/.kube/config
           chmod 600 ~/.kube/config
 
