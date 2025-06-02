@@ -107,10 +107,9 @@ jobs:
       - name: Create & Apply Kubernetes Secret from Secret
         run: |
           mkdir -p k8s
-          echo "${{ secrets.USER_SERVICE_SECRET_YML }}" > k8s/user-service-secret.yml
-
+          printf '%s\n' "${{ secrets.USER_SERVICE_SECRET_YML }}" > k8s/user-service-secret.yml
           kubectl apply -f k8s/user-service-secret.yml
-
+          
       # 11) Kubernetes 매니페스트 적용
       - name: Apply Kubernetes Deployment & Service
         run: |
