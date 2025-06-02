@@ -107,20 +107,23 @@ public class WebSecurity {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // 프론트 개발 환경 URL
+        // 1) 허용할 출처 목록에 운영 도메인 https://lumidiary.com 추가
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
-                "https://lumi-fe-eta.vercel.app"
+                "https://lumi-fe-eta.vercel.app",
+                "https://lumidiary.com"          // ← 반드시 추가해야 합니다
         ));
-        // 허용할 HTTP 메서드
-        config.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS"));
-        // 허용할 헤더
+        // 2) 허용할 HTTP 메서드 목록
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // 3) 허용할 요청 헤더(모두 허용)
         config.setAllowedHeaders(Arrays.asList("*"));
-        // 쿠키 인증 등을 위해 필요
+        // 4) 응답 헤더에서 노출시킬 헤더(token, userId 등)
+        config.setExposedHeaders(Arrays.asList("token", "userId"));
+        // 5) 자격증명(Cookie, Authorization 헤더 등) 보내는 것 허용
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // 모든 엔드포인트에 적용
+        // 모든 경로에 대해 위 설정 적용
         source.registerCorsConfiguration("/**", config);
         return source;
     }
