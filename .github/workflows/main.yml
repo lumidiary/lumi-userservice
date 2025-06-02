@@ -87,8 +87,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-pip
-          sudo pip3 install oci-cli
-          echo "/usr/local/bin" >> $GITHUB_PATH
+          pip3 install --user oci-cli
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
 
       # ------------------------------------------------
       # 11) Kubeconfig 복원 (GitHub Secrets → ~/.kube/config)
