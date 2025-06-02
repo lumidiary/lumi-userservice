@@ -26,43 +26,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         
-      # ------------------------------------------------
+
       # 3) JDK 17 설치 (Spring Boot 빌드를 위해 필요)
-      # ------------------------------------------------
       - name: Set up Java 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-          
-      # ------------------------------------------------
+        
       # 5) Maven으로 Spring Boot 패키징 (Jar 생성)
-      # ------------------------------------------------
       - name: Build with Maven
         run: mvn clean compile package -DskipTests
 
-      # ------------------------------------------------
+
       # 6) Docker Hub 로그인
-      # ------------------------------------------------
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        # GitHub Secrets에 등록한 DOCKERHUB_USERNAME, DOCKERHUB_TOKEN 을 이용해
-        # Docker Hub에 로그인합니다.
 
-      # ------------------------------------------------
       # 7) Docker Buildx 설치 (멀티 아키텍처 빌드 지원)
-      # ------------------------------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-        # docker buildx를 활성화하여 linux/amd64, linux/arm64 등 멀티 아키텍처 이미지 빌드가 가능하게 합니다.
 
-      # ------------------------------------------------
       # 8) Docker 이미지 빌드 및 푸시
-      # ------------------------------------------------
       - name: Build and Push Docker image
         run: |
           COMMIT_HASH=$(git rev-parse --short HEAD)
@@ -74,9 +63,7 @@ jobs:
             --push \
             .
 
-      # ------------------------------------------------
       # 9) kubectl 설치 (Kubernetes 명령어 사용 준비)
-      # ------------------------------------------------
       - name: Install kubectl
         uses: azure/setup-kubectl@v3
         with:
@@ -103,14 +90,16 @@ jobs:
       # 11) OCI CLI로 kubeconfig 생성
       - name: Generate kubeconfig via OCI CLI
         run: |
+          mkdir -p ~/.kube
           oci ce cluster create-kubeconfig \
             --cluster-id ${{ secrets.OCI_CLUSTER_OCID }} \
             --file $HOME/.kube/config \
             --region ${{ secrets.OCI_REGION }} \
-            --token-version v2.0 \
+            --token-version 2.0.0 \
             --overwrite
           chmod 600 $HOME/.kube/config
 
+          # 클러스터 연결 확인
           kubectl config view
           kubectl get nodes --no-headers
 
