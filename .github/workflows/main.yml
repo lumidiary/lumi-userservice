@@ -32,20 +32,10 @@ jobs:
       - name: Set up Java 17
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
-
-      # ------------------------------------------------
-      # 4) Maven 의존성 캐시 (빌드 속도 최적화)
-      # ------------------------------------------------
-      - name: Cache Maven dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
+          cache: 'maven'
+          
       # ------------------------------------------------
       # 5) Maven으로 Spring Boot 패키징 (Jar 생성)
       # ------------------------------------------------
@@ -95,16 +85,19 @@ jobs:
       # 10) OCI CLI 설치
       - name: Install OCI CLI
         run: |
-          python3 -m pip install --upgrade pip
-          pip3 install oci-cli --upgrade
-          echo "PATH=$HOME/.local/bin:\$PATH" >> $GITHUB_ENV
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          sudo pip3 install oci-cli
+          echo "/usr/local/bin" >> $GITHUB_PATH
 
       # ------------------------------------------------
       # 11) Kubeconfig 복원 (GitHub Secrets → ~/.kube/config)
       # ------------------------------------------------
       - name: Restore Kubeconfig
         run: |
-          mkdir -p ~/.kube
+          mkdir -p $HOME/.kube
+          touch $HOME/.kube/config
+          
           echo "${{ secrets.KUBECONFIG_CONTENT }}" > ~/.kube/config
           chmod 600 ~/.kube/config
 
