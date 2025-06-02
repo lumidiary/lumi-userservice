@@ -104,8 +104,14 @@ jobs:
           kubectl get nodes --no-headers
 
       # 10) Kubernetes Secret 매니페스트 적용 (user-service-secret)
-      - name: Apply Kubernetes Secret
+      - name: Create & Apply Kubernetes Secret from Secret
         run: |
+          # ── GitHub Secret(USER_SERVICE_SECRET_YML) 에 저장된 YAML 내용을
+          #    k8s/user-service-secret.yml 파일로 생성
+          mkdir -p k8s
+          echo "${{ secrets.USER_SERVICE_SECRET_YML }}" > k8s/user-service-secret.yml
+
+          # 생성된 파일을 클러스터에 적용하여 Secret 생성/갱신
           kubectl apply -f k8s/user-service-secret.yml
 
       # 11) Kubernetes 매니페스트 적용
