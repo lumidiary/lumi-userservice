@@ -90,8 +90,14 @@ jobs:
         with:
           version: 'v1.27.0'
 
+      # 9) OCI CLI 설치
+      - name: Install OCI CLI
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install oci-cli --upgrade
+
       # ------------------------------------------------
-      # 9) Kubeconfig 복원 (GitHub Secrets → ~/.kube/config)
+      # 10) Kubeconfig 복원 (GitHub Secrets → ~/.kube/config)
       # ------------------------------------------------
       - name: Restore Kubeconfig
         run: |
