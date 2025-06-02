@@ -110,18 +110,18 @@ jobs:
 
           # here-doc 방식으로 k8s/user-service-secret.yml 파일 생성
           cat <<EOF > k8s/user-service-secret.yml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: user-service-secret
-  namespace: default
-type: Opaque
-stringData:
-  spring.datasource.username: "${{ secrets.SPRING_DATASOURCE_USERNAME }}"
-  spring.datasource.password: "${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
-  spring.mail.username:       "${{ secrets.SPRING_MAIL_USERNAME }}"
-  spring.mail.password:       "${{ secrets.SPRING_MAIL_PASSWORD }}"
-EOF
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: user-service-secret
+            namespace: default
+          type: Opaque
+          stringData:
+            spring.datasource.username: "${{ secrets.SPRING_DATASOURCE_USERNAME }}"
+            spring.datasource.password: "${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+            spring.mail.username:       "${{ secrets.SPRING_MAIL_USERNAME }}"
+            spring.mail.password:       "${{ secrets.SPRING_MAIL_PASSWORD }}"
+          EOF
 
           # 생성된 Secret 매니페스트를 클러스터에 적용
           kubectl apply -f k8s/user-service-secret.yml
