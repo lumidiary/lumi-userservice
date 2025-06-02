@@ -6,6 +6,11 @@ spring:
     name: UserService
   config:
     import: optional:config/application-secret.yml
+  jackson:
+    serialization:
+      # 날짜를 숫자(timestamp) 대신 "yyyy-MM-dd" 같은 문자열로 직렬화
+      write-dates-as-timestamps: false
+    date-format: yyyy-MM-dd   # 전역 날짜 포맷
   jpa:
     hibernate:
       ddl-auto: update
@@ -38,6 +43,7 @@ oci:
     namespace: ax5ipvulwvc1        # OCI Object Storage namespace
     bucket: bucket-20250507-1731   # OCI Object Storage bucket name
     uri-prefix: https://ax5ipvulwvc1.objectstorage.ap-chuncheon-1.oci.customer-oci.com
+    par-url-prefix: https://ax5ipvulwvc1.objectstorage.ap-chuncheon-1.oci.customer-oci.com/p/lcHjyXH-Qpc4Z7LTiUpDo4E3TjB1i9-bop52n361zIRHh2TLjnHKxzjL7S7vufPK/n/ax5ipvulwvc1/b/bucket-20250507-1731/o/
 
 
 email:

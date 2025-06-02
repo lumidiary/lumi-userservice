@@ -6,6 +6,9 @@ import com.example.userservice.vo.*;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.util.UUID;
+
 public interface UserService extends UserDetailsService {
 
     ResponseUser signup(RequestUser request);                        // 회원가입
@@ -26,4 +29,7 @@ public interface UserService extends UserDetailsService {
     ResponseUser getUserDetailsByEmail(String email);              // 이메일로 회원 정보 조회
 
     Iterable<ResponseUser> getAllUsers();                          // 전체 회원 조회
+
+    public void notifyDigestCompleted(UUID userId, String title,
+                                      LocalDate periodStart, LocalDate periodEnd, String summary);
 }

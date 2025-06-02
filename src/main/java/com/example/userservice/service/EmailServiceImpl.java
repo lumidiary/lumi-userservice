@@ -25,8 +25,11 @@ import org.springframework.web.client.RestTemplate;
 import javax.crypto.SecretKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -48,6 +51,8 @@ public class EmailServiceImpl implements EmailService {
 
     @Value("${app.client.url}")
     private String clientUrl;
+
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     // 서명용 SecretKey 생성
     private SecretKey getSigningKey() {
@@ -71,7 +76,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendVerificationLink(String email) {
         String token = createToken(email, "signup");
-        String link = clientUrl + "/signup?verifyToken=" + token;
+        String link = /*clientUrl + */"https://lumi-fe-eta.vercel.app/signup?verifyToken=" + token;
 
         String subject = "[LumiDiary] 회원가입 이메일 인증";
         String html = ""
@@ -119,7 +124,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendPasswordResetLink(String email) {
         String token = createToken(email, "reset");
-        String link = clientUrl + "/reset-password?resetToken=" + token;
+        String link = /*clientUrl + */"https://lumi-fe-eta.vercel.app/password-change?verifyToken=" + token;
 
         String subject = "[LumiDiary] 비밀번호 재설정 이메일";
         String html = ""
@@ -157,6 +162,39 @@ public class EmailServiceImpl implements EmailService {
         } catch (JwtException ex) {
             return false;
         }
+    }
+
+    @Override
+    public void sendDigestCompletionEmail(String toEmail,
+                                          UUID id,
+                                          String title,
+                                          LocalDate periodStart,
+                                          LocalDate periodEnd,
+                                          String summary) {
+        String subject = String.format("[LumiDiary] \"%s\" 다이제스트가 완성되었습니다", title);
+
+        // HTML 템플릿 작성
+        String html = ""
+                + "<div style=\"font-family:Arial,sans-serif;color:#333;padding:20px;max-width:600px;margin:auto;\">"
+                + "  <h2 style=\"color:#7D3C98;\">안녕하세요, LumiDiary입니다!</h2>"
+                + "  <p>회원님께서 요청하신 다이제스트가 아래 기간으로 완성되었습니다.</p>"
+                + "  <ul style=\"font-size:14px;\">"
+                + "    <li><strong>제목:</strong> " + title + "</li>"
+                + "    <li><strong>기간:</strong> "
+                +        periodStart.format(DATE_FMT) + " ~ " + periodEnd.format(DATE_FMT)
+                + "    </li>"
+                + "  </ul>"
+                + "  <div style=\"background:#f5f5f5;padding:15px;margin:20px 0;border-radius:4px;\">"
+                + "    <h4 style=\"margin-top:0;\">요약 내용</h4>"
+                + "    <pre style=\"white-space:pre-wrap;font-size:14px;\">"
+                +       summary
+                + "    </pre>"
+                + "  </div>"
+                + "  <p>감사합니다.</p>"
+                + "</div>";
+
+        // 메일 전송
+        sendHtmlMail(toEmail, subject, html);
     }
 
     // 공통 HTML 메일 전송

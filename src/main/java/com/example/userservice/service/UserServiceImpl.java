@@ -16,6 +16,7 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,8 +24,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.SecretKey;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -109,7 +112,22 @@ public class UserServiceImpl implements UserService {
         return mapToResponse(userEntity, null);
     }
 
+    @Override
+    public void notifyDigestCompleted(UUID userId,
+                                      String title,
+                                      LocalDate periodStart,
+                                      LocalDate periodEnd,
+                                      String summary) {
+        // 1) UUID로 사용자 조회
+        UserEntity user = userRepository.findByUserId(userId.toString());
+        // 없는 사용자면 404 에러 던지기
+        if (user == null || user.isDeleted()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다: " + userId);
+        }
 
+        // 2) 이메일로 다이제스트 완료 알림 전송
+        emailService.sendDigestCompletionEmail(user.getEmail(), userId, title, periodStart, periodEnd, summary);
+    }
 
     @Override
     public void sendSignupVerification(String email) {
