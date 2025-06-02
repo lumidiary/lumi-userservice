@@ -103,15 +103,19 @@ jobs:
           kubectl config view
           kubectl get nodes --no-headers
 
-      # 10) Kubernetes 매니페스트 적용(apply)
-      - name: Apply Kubernetes manifests
+      # 10) Kubernetes Secret 매니페스트 적용 (user-service-secret)
+      - name: Apply Kubernetes Secret
         run: |
-          kubectl apply -f k8s/
+          kubectl apply -f k8s/user-service-secret.yml
 
-      # 11) 롤아웃 재시작
-      - name: Rollout Restart
+      # 11) Kubernetes 매니페스트 적용
+      - name: Apply Kubernetes Deployment & Service
+        run: |
+          kubectl apply -f k8s/userservice-deployment-service.yml
+
+      # 12) Rollout Restart (latest 태그 사용 시 강제 재시작)
+      - name: Rollout Restart Deployment
         run: |
           kubectl rollout restart deployment/$K8S_DEPLOYMENT --namespace $K8S_NAMESPACE
           kubectl rollout status deployment/$K8S_DEPLOYMENT --namespace $K8S_NAMESPACE
-        shell: bash
 
