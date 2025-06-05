@@ -108,7 +108,6 @@ jobs:
         run: |
           mkdir -p k8s
 
-          # here-doc 방식으로 k8s/user-service-secret.yml 파일 생성
           cat <<EOF > k8s/user-service-secret.yml
           apiVersion: v1
           kind: Secret
@@ -123,7 +122,6 @@ jobs:
             spring.mail.password:       "${{ secrets.SPRING_MAIL_PASSWORD }}"
           EOF
 
-          # 생성된 Secret 매니페스트를 클러스터에 적용
           kubectl apply -f k8s/user-service-secret.yml
           
       # 11) Kubernetes 매니페스트 적용
