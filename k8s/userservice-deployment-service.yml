@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: user-service
+  namespace: default
   labels:
     app: user-service
 spec:
@@ -35,6 +36,27 @@ spec:
           envFrom:
             - secretRef:
                 name: user-service-secret
+          env:
+            - name: SPRING_MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: user-service-secret
+                  key: "spring.mail.username"
+            - name: SPRING_MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: user-service-secret
+                  key: "spring.mail.password"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: user-service-secret
+                  key: "spring.datasource.username"
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: user-service-secret
+                  key: "spring.datasource.password"
 ---
 apiVersion: v1
 kind: Service
