@@ -62,3 +62,5 @@ logging:
   level:
     org.springframework.security.web.FilterChainProxy: DEBUG
     org.springframework.security.config: DEBUG
+    org.springframework.mail: DEBUG
+    javax.mail: DEBUG
